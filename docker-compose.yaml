@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Training service (run once)
+  training:
+    build: .
+    image: ml-app:latest
+    command: python src/train.py --epochs 5 --batch-size 64 --save-path /models/model.pth
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+    profiles:
+      - training
+
+  # Inference service
+  inference:
+    build: .
+    image: ml-app:latest
+    command: python src/inference.py
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+      - MODEL_PATH=/app/models/model.pth
+      - HOST=0.0.0.0
+      - PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
