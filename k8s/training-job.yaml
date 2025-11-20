@@ -20,7 +20,7 @@ spec:
 
       containers:
       - name: trainer
-        image: your-registry/ml-app:latest  # Replace with your image
+        image: kisahm/ml-app:latest
         imagePullPolicy: Always
 
         command: ["python", "src/train.py"]

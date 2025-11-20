@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 # Configuration
 IMAGE_NAME="${IMAGE_NAME:-ml-app}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
-REGISTRY="${REGISTRY:-your-registry}"
+REGISTRY="${REGISTRY:-kisahm}"
 NAMESPACE="${NAMESPACE:-default}"
 
 echo -e "${GREEN}================================${NC}"

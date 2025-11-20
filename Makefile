@@ -3,7 +3,7 @@
 # Configuration
 IMAGE_NAME ?= ml-app
 IMAGE_TAG ?= latest
-REGISTRY ?= your-registry
+REGISTRY ?= kisahm
 FULL_IMAGE = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 help:
