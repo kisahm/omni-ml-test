@@ -1,12 +1,13 @@
-# Multi-stage Dockerfile for ML Training and Inference
-# Supports both CPU and GPU (CUDA)
+# Dockerfile for LLM Inference with vLLM
+# Supports GPU (CUDA) acceleration
 
 FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04 as base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    CUDA_HOME=/usr/local/cuda
+    CUDA_HOME=/usr/local/cuda \
+    HF_HOME=/app/.cache/huggingface
 
 # Install Python and system dependencies
 RUN apt-get update && apt-get install -y \
@@ -16,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     wget \
     git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create symbolic links
@@ -30,23 +32,30 @@ WORKDIR /app
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Install PyTorch with CUDA support
+# Install PyTorch with CUDA 12.1 support
 RUN pip install --no-cache-dir \
-    torch==2.1.0 \
-    torchvision==0.16.0 \
-    torchaudio==2.1.0 \
+    torch==2.3.0 \
     --index-url https://download.pytorch.org/whl/cu121
+
+# Install vLLM and other dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/
+COPY benchmark/ ./benchmark/
 
-# Create directories for data and models
-RUN mkdir -p /app/data /app/models
+# Create directories for models and cache
+RUN mkdir -p /app/models /app/.cache/huggingface
 
 # Expose port for inference service
 EXPOSE 8000
 
-# Default command (can be overridden in Kubernetes)
+# Default model (can be overridden via env var)
+ENV MODEL_NAME=microsoft/Phi-3-mini-4k-instruct
+ENV MAX_MODEL_LEN=4096
+ENV HOST=0.0.0.0
+ENV PORT=8000
+
+# Default command
 CMD ["python", "src/inference.py"]

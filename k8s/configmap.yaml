@@ -1,19 +1,20 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ml-config
+  name: llm-config
 data:
-  # Training configuration
-  EPOCHS: "10"
-  BATCH_SIZE: "128"
-  LEARNING_RATE: "0.1"
+  # LLM Model configuration
+  MODEL_NAME: "microsoft/Phi-3-mini-4k-instruct"
+  MAX_MODEL_LEN: "4096"
 
   # Inference configuration
   HOST: "0.0.0.0"
   PORT: "8000"
-  MODEL_PATH: "/models/model.pth"
 
   # GPU configuration
   CUDA_VISIBLE_DEVICES: "0"
   NVIDIA_VISIBLE_DEVICES: "all"
   NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
+  # HuggingFace cache
+  HF_HOME: "/app/.cache/huggingface"

@@ -1,4 +1,4 @@
-.PHONY: help build push deploy-train deploy-inference deploy-edge clean benchmark
+.PHONY: help build push deploy-inference deploy-edge deploy-all clean benchmark status
 
 # Configuration
 IMAGE_NAME ?= ml-app
@@ -7,19 +7,19 @@ REGISTRY ?= kisahm
 FULL_IMAGE = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 help:
-	@echo "ML Kubernetes Test Application - Makefile"
+	@echo "LLM Kubernetes Test Application - Makefile"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  build              - Build Docker image"
 	@echo "  push               - Push Docker image to registry"
-	@echo "  deploy-train       - Deploy training job"
-	@echo "  deploy-inference   - Deploy inference service (cluster)"
-	@echo "  deploy-edge        - Deploy inference service (edge)"
-	@echo "  deploy-all         - Deploy everything"
+	@echo "  deploy-inference   - Deploy LLM inference service (cluster)"
+	@echo "  deploy-edge        - Deploy LLM inference service (edge)"
+	@echo "  deploy-all         - Deploy both cluster and edge inference"
 	@echo "  clean              - Clean up Kubernetes resources"
-	@echo "  benchmark          - Run latency benchmark"
-	@echo "  logs-train         - Show training logs"
-	@echo "  logs-inference     - Show inference logs"
+	@echo "  benchmark          - Run LLM latency benchmark"
+	@echo "  status             - Show deployment status"
+	@echo "  logs-inference     - Show inference logs (cluster)"
+	@echo "  logs-edge          - Show inference logs (edge)"
 	@echo ""
 
 build:
@@ -32,77 +32,65 @@ push: build
 	docker push $(FULL_IMAGE)
 	docker push $(REGISTRY)/$(IMAGE_NAME):latest
 
-deploy-pvcs:
-	@echo "Creating PersistentVolumeClaims..."
-	kubectl apply -f k8s/training-job.yaml | grep -i persistentvolumeclaim || true
-
-deploy-train: deploy-pvcs
-	@echo "Deploying training job..."
-	kubectl apply -f k8s/training-job.yaml
-
 deploy-inference:
-	@echo "Deploying inference service (cluster)..."
+	@echo "Deploying LLM inference service (cluster)..."
 	kubectl apply -f k8s/configmap.yaml
 	kubectl apply -f k8s/inference-deployment.yaml
 
 deploy-edge:
-	@echo "Deploying inference service (edge)..."
+	@echo "Deploying LLM inference service (edge)..."
 	kubectl apply -f k8s/configmap.yaml
 	kubectl apply -f k8s/edge-deployment.yaml
 
-deploy-all: deploy-train deploy-inference deploy-edge
-	@echo "All components deployed!"
+deploy-all: deploy-inference deploy-edge
+	@echo "All LLM inference services deployed!"
 
 clean:
 	@echo "Cleaning up Kubernetes resources..."
-	kubectl delete -f k8s/training-job.yaml --ignore-not-found=true
 	kubectl delete -f k8s/inference-deployment.yaml --ignore-not-found=true
 	kubectl delete -f k8s/edge-deployment.yaml --ignore-not-found=true
 	kubectl delete -f k8s/configmap.yaml --ignore-not-found=true
 
-logs-train:
-	@echo "Fetching training logs..."
-	kubectl logs -l app=ml-training -f
-
 logs-inference:
-	@echo "Fetching inference logs (cluster)..."
-	kubectl logs -l app=ml-inference,location=cluster -f
+	@echo "Fetching LLM inference logs (cluster)..."
+	kubectl logs -l app=llm-inference,location=cluster -f
 
 logs-edge:
-	@echo "Fetching inference logs (edge)..."
-	kubectl logs -l app=ml-inference,location=edge -f
+	@echo "Fetching LLM inference logs (edge)..."
+	kubectl logs -l app=llm-inference,location=edge -f
 
 status:
-	@echo "=== Training Jobs ==="
-	kubectl get jobs -l app=ml-training
-	@echo ""
-	@echo "=== Inference Deployments ==="
-	kubectl get deployments -l app=ml-inference
+	@echo "=== LLM Inference Deployments ==="
+	kubectl get deployments -l app=llm-inference
 	@echo ""
 	@echo "=== Services ==="
-	kubectl get services -l app=ml-inference
+	kubectl get services -l app=llm-inference
 	@echo ""
 	@echo "=== Pods ==="
-	kubectl get pods -l app=ml-inference
+	kubectl get pods -l app=llm-inference
 
 benchmark:
-	@echo "Running benchmark..."
+	@echo "Running LLM benchmark..."
 	@echo "Getting service URLs..."
-	$(eval CLUSTER_URL := $(shell kubectl get svc ml-inference-cluster-service -o jsonpath='{.spec.clusterIP}'))
-	$(eval EDGE_URL := $(shell kubectl get svc ml-inference-edge-service -o jsonpath='{.spec.clusterIP}'))
-	python3 benchmark/benchmark.py \
+	$(eval CLUSTER_URL := $(shell kubectl get svc llm-inference-cluster-service -o jsonpath='{.spec.clusterIP}'))
+	$(eval EDGE_URL := $(shell kubectl get svc llm-inference-edge-service -o jsonpath='{.spec.clusterIP}'))
+	python3 benchmark/llm_benchmark.py \
 		--cluster-url http://$(CLUSTER_URL):8000 \
 		--edge-url http://$(EDGE_URL):8000 \
-		--requests 100 \
+		--requests 50 \
+		--max-tokens 256 \
 		--mode compare
 
 # Local development
-run-train-local:
-	python3 src/train.py --epochs 2 --batch-size 64
-
 run-inference-local:
-	python3 src/inference.py
+	MODEL_NAME=microsoft/Phi-3-mini-4k-instruct python3 src/inference.py
 
 test-inference-local:
-	@echo "Testing local inference..."
+	@echo "Testing local LLM inference..."
 	curl -X POST http://localhost:8000/health | jq .
+	@echo ""
+	@echo "Testing chat completion..."
+	curl -X POST http://localhost:8000/v1/chat/completions \
+		-H "Content-Type: application/json" \
+		-d '{"model":"default","messages":[{"role":"user","content":"What is 2+2?"}],"max_tokens":50}' \
+		| jq .

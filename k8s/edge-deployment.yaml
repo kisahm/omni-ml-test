@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ml-inference-edge
+  name: llm-inference-edge
   labels:
-    app: ml-inference
+    app: llm-inference
     component: inference
     location: edge
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ml-inference
+      app: llm-inference
       location: edge
 
   template:
     metadata:
       labels:
-        app: ml-inference
+        app: llm-inference
         component: inference
         location: edge
     spec:
@@ -34,22 +34,23 @@ spec:
 
         resources:
           requests:
-            memory: "4Gi"
-            cpu: "2"
+            memory: "16Gi"
+            cpu: "4"
             nvidia.com/gpu: "1"
           limits:
-            memory: "8Gi"
-            cpu: "4"
+            memory: "32Gi"
+            cpu: "8"
             nvidia.com/gpu: "1"
 
         volumeMounts:
-        - name: model-storage
-          mountPath: /models
-          readOnly: true
+        - name: cache-volume
+          mountPath: /app/.cache
 
         env:
-        - name: MODEL_PATH
-          value: "/models/model.pth"
+        - name: MODEL_NAME
+          value: "microsoft/Phi-3-mini-4k-instruct"
+        - name: MAX_MODEL_LEN
+          value: "4096"
         - name: HOST
           value: "0.0.0.0"
         - name: PORT
@@ -60,6 +61,8 @@ spec:
           value: "all"
         - name: NVIDIA_DRIVER_CAPABILITIES
           value: "compute,utility"
+        - name: HF_HOME
+          value: "/app/.cache/huggingface"
         - name: LOCATION
           value: "edge"
 
@@ -67,24 +70,24 @@ spec:
           httpGet:
             path: /health
             port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
           failureThreshold: 3
 
         readinessProbe:
           httpGet:
             path: /health
             port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
 
       volumes:
-      - name: model-storage
-        persistentVolumeClaim:
-          claimName: ml-models-pvc
+      - name: cache-volume
+        emptyDir:
+          sizeLimit: 50Gi
 
       # Schedule ONLY on edge nodes (different region)
       affinity:
@@ -113,7 +116,7 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - ml-inference
+                  - llm-inference
                 - key: location
                   operator: In
                   values:
@@ -133,14 +136,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ml-inference-edge-service
+  name: llm-inference-edge-service
   labels:
-    app: ml-inference
+    app: llm-inference
     location: edge
 spec:
   type: ClusterIP
   selector:
-    app: ml-inference
+    app: llm-inference
     location: edge
   ports:
   - port: 8000

@@ -1,13 +1,13 @@
-# ML Kubernetes Test Application
+# LLM Kubernetes Test Application
 
-Eine vollständige ML-Test-Anwendung für Kubernetes mit GPU-Unterstützung, um Performance-Unterschiede zwischen Cluster- und Edge-Deployments zu messen.
+Eine vollständige LLM-Inference-Anwendung für Kubernetes mit vLLM und GPU-Unterstützung, um Performance-Unterschiede zwischen Cluster- und Edge-Deployments zu messen.
 
 ## 🎯 Projektziel
 
-Diese Anwendung ermöglicht es, ML Training und Inference auf Kubernetes mit GPUs durchzuführen und die Performance zwischen verschiedenen Deployment-Szenarien zu vergleichen:
+Diese Anwendung ermöglicht es, LLM-Inference auf Kubernetes mit GPUs durchzuführen und die Performance zwischen verschiedenen Deployment-Szenarien zu vergleichen:
 
-- **Cluster Deployment**: Inference-Server im zentralen Kubernetes-Cluster
-- **Edge Deployment**: Inference-Server auf Edge-Nodes in anderen Regionen mit hoher Latenz
+- **Cluster Deployment**: Inference-Server im zentralen Kubernetes-Cluster (niedrige Latenz)
+- **Edge Deployment**: Inference-Server auf Edge-Nodes in anderen Regionen (hohe Latenz)
 
 ## 🏗️ Architektur
 
@@ -15,12 +15,14 @@ Diese Anwendung ermöglicht es, ML Training und Inference auf Kubernetes mit GPU
 ┌─────────────────────────────────────────────────────────────┐
 │                    Kubernetes Cluster                        │
 │                                                               │
-│  ┌──────────────┐      ┌────────────────────────────┐       │
-│  │  Training    │      │   Inference (Cluster)      │       │
-│  │  Job         │──────▶   - 2 Replicas             │       │
-│  │  (GPU)       │      │   - GPU Support            │       │
-│  └──────────────┘      │   - Low Latency            │       │
-│                        └────────────────────────────┘       │
+│  ┌────────────────────────────────────────┐                 │
+│  │   LLM Inference (Cluster)              │                 │
+│  │   - vLLM Engine                        │                 │
+│  │   - 2 Replicas                         │                 │
+│  │   - GPU Acceleration (1x GPU/Pod)      │                 │
+│  │   - Low Latency                        │                 │
+│  │   - Model: Phi-3-mini-4k-instruct      │                 │
+│  └────────────────────────────────────────┘                 │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -29,52 +31,53 @@ Diese Anwendung ermöglicht es, ML Training und Inference auf Kubernetes mit GPU
 ┌─────────────────────────────────────────────────────────────┐
 │                    Edge Location                             │
 │                                                               │
-│  ┌────────────────────────────┐                             │
-│  │   Inference (Edge)         │                             │
-│  │   - 2 Replicas             │                             │
-│  │   - GPU Support            │                             │
-│  │   - High Latency           │                             │
-│  └────────────────────────────┘                             │
+│  ┌────────────────────────────────────────┐                 │
+│  │   LLM Inference (Edge)                 │                 │
+│  │   - vLLM Engine                        │                 │
+│  │   - 2 Replicas                         │                 │
+│  │   - GPU Acceleration (1x GPU/Pod)      │                 │
+│  │   - High Latency                       │                 │
+│  │   - Model: Phi-3-mini-4k-instruct      │                 │
+│  └────────────────────────────────────────┘                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## 📋 Features
 
-- ✅ **Echte GPU-Workloads**: ResNet18 Training auf CIFAR-10
-- ✅ **REST API**: FastAPI-basierter Inference-Service
-- ✅ **Performance-Monitoring**: GPU-Auslastung, Latenz, Durchsatz
-- ✅ **Batch-Inference**: Optimierte Batch-Verarbeitung
+- ✅ **vLLM Engine**: Hochoptimierte LLM-Inference mit PagedAttention
+- ✅ **OpenAI-kompatible API**: `/v1/chat/completions` und `/v1/completions`
+- ✅ **GPU-Beschleunigung**: Echte GPU-Workloads mit CUDA
+- ✅ **Streaming Support**: Server-Sent Events (SSE) für Token-Streaming
+- ✅ **llmperf-kompatibel**: Benchmark-Metriken (TTFT, Throughput, Latenz)
+- ✅ **Performance-Monitoring**: GPU-Auslastung, Token/s, Latenz
 - ✅ **Kubernetes-Ready**: Deployments für Cluster und Edge
-- ✅ **Benchmark-Tools**: Automatisierte Latenz-Vergleiche
-- ✅ **Metriken**: Detaillierte Performance-Statistiken
+- ✅ **Vortrainierte Modelle**: Phi-3-mini-4k (3.8B Parameter)
 
 ## 🛠️ Technologie-Stack
 
-- **ML Framework**: PyTorch 2.1.0
-- **API Framework**: FastAPI
+- **LLM Engine**: vLLM 0.5.4
+- **Framework**: PyTorch 2.3.0
+- **API**: FastAPI (OpenAI-kompatibel)
 - **Container**: Docker (NVIDIA CUDA 12.1)
 - **Orchestrierung**: Kubernetes
 - **GPU**: NVIDIA GPUs (CUDA)
 - **Monitoring**: Prometheus-Client, NVML
+- **Modell**: microsoft/Phi-3-mini-4k-instruct (3.8B)
 
 ## 📁 Projektstruktur
 
 ```
 .
 ├── src/
-│   ├── model.py           # ResNet18 Modell-Definition
-│   ├── train.py           # Training-Script mit GPU
-│   ├── inference.py       # Inference-API (FastAPI)
+│   ├── inference.py       # vLLM Inference Service (OpenAI-API)
 │   └── metrics.py         # Performance-Metriken
 ├── k8s/
-│   ├── training-job.yaml  # Training Job Manifest
 │   ├── inference-deployment.yaml  # Cluster Inference
 │   ├── edge-deployment.yaml       # Edge Inference
-│   └── configmap.yaml     # Konfiguration
+│   └── configmap.yaml            # Konfiguration
 ├── benchmark/
-│   ├── benchmark.py       # Latenz-Benchmark-Tool
-│   └── create_test_images.py  # Test-Bilder erstellen
-├── Dockerfile             # Multi-Stage Docker Build
+│   └── llm_benchmark.py   # LLM Latenz-Benchmark (llmperf-style)
+├── Dockerfile             # vLLM Docker Build
 ├── requirements.txt       # Python-Abhängigkeiten
 ├── Makefile              # Build & Deploy Commands
 └── README.md
@@ -88,50 +91,40 @@ Diese Anwendung ermöglicht es, ML Training und Inference auf Kubernetes mit GPU
 - NVIDIA GPU Operator installiert
 - Docker Registry Zugriff
 - kubectl konfiguriert
+- Mindestens 16GB GPU-Memory pro Node
 
 ### 2. Image bauen und pushen
 
 ```bash
 # Image bauen
-make build IMAGE_NAME=ml-app REGISTRY=your-registry
+make build
 
 # Image pushen
-make push IMAGE_NAME=ml-app REGISTRY=your-registry
+make push
 ```
 
 **Oder manuell:**
 
 ```bash
-docker build -t your-registry/ml-app:latest .
-docker push your-registry/ml-app:latest
+docker build -t kisahm/ml-app:latest .
+docker push kisahm/ml-app:latest
 ```
 
-### 3. Kubernetes Manifeste anpassen
-
-Bearbeite die YAML-Dateien in `k8s/` und ersetze:
-- `your-registry/ml-app:latest` mit deinem Image
-- Storage-Klassen nach Bedarf
-- Node-Labels/Selectors für dein Cluster
-
-### 4. Training starten
+### 3. GPU Nodes labeln
 
 ```bash
-# PVCs erstellen
-kubectl apply -f k8s/training-job.yaml
+# Cluster Node
+kubectl label nodes <node-name> \
+  accelerator=nvidia-gpu \
+  node-location=cluster
 
-# Training Job starten
-kubectl apply -f k8s/training-job.yaml
-
-# Logs verfolgen
-kubectl logs -l app=ml-training -f
+# Edge Node (andere Region)
+kubectl label nodes <edge-node-name> \
+  accelerator=nvidia-gpu \
+  node-location=edge
 ```
 
-Das Training:
-- Lädt CIFAR-10 Dataset herunter (ca. 170 MB)
-- Trainiert ResNet18 für 10 Epochen (ca. 5-10 Minuten mit GPU)
-- Speichert das Modell in `/models/model.pth`
-
-### 5. Inference Services deployen
+### 4. Inference Services deployen
 
 ```bash
 # Cluster Inference
@@ -142,57 +135,94 @@ make deploy-edge
 
 # Oder beide gleichzeitig
 make deploy-all
+
+# Status prüfen
+make status
 ```
 
-### 6. Services testen
+Das Deployment:
+- Lädt das Phi-3-mini-4k-instruct Modell (ca. 7.5GB)
+- Startet vLLM Engine mit GPU-Beschleunigung
+- Öffnet OpenAI-kompatible API auf Port 8000
+- Start dauert ca. 2-3 Minuten (Model-Download + Initialisierung)
+
+### 5. Services testen
 
 ```bash
 # Health Check
-kubectl get svc ml-inference-cluster-service
-CLUSTER_IP=$(kubectl get svc ml-inference-cluster-service -o jsonpath='{.spec.clusterIP}')
+kubectl get svc llm-inference-cluster-service
+CLUSTER_IP=$(kubectl get svc llm-inference-cluster-service -o jsonpath='{.spec.clusterIP}')
 
 curl http://$CLUSTER_IP:8000/health | jq .
 
-# Inference Test (mit Test-Bild)
-curl -X POST \
-  -F "file=@test_image.png" \
-  http://$CLUSTER_IP:8000/predict | jq .
+# Chat Completion Test
+curl -X POST http://$CLUSTER_IP:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "default",
+    "messages": [{"role": "user", "content": "What is machine learning?"}],
+    "max_tokens": 100,
+    "temperature": 0.7
+  }' | jq .
 ```
 
-### 7. Benchmark durchführen
+### 6. Benchmark durchführen
 
 ```bash
 # Automatischer Benchmark
 make benchmark
 
 # Oder manuell
-python3 benchmark/benchmark.py \
+python3 benchmark/llm_benchmark.py \
   --cluster-url http://<cluster-service>:8000 \
   --edge-url http://<edge-service>:8000 \
-  --requests 100 \
+  --requests 50 \
+  --max-tokens 256 \
   --mode compare
 ```
 
 ## 📊 API Endpoints
 
-### Inference API
+### OpenAI-kompatible API
+
+```bash
+# List Models
+GET /v1/models
+
+# Chat Completion
+POST /v1/chat/completions
+Content-Type: application/json
+{
+  "model": "default",
+  "messages": [
+    {"role": "user", "content": "Hello!"}
+  ],
+  "max_tokens": 512,
+  "temperature": 0.7,
+  "stream": false
+}
+
+# Text Completion
+POST /v1/completions
+{
+  "model": "default",
+  "prompt": "Once upon a time",
+  "max_tokens": 512
+}
+
+# Streaming
+POST /v1/chat/completions
+{
+  "stream": true,
+  ...
+}
+```
+
+### Custom Endpoints
 
 ```bash
 # Health Check
 GET /health
-
-# Model Info
-GET /info
-
-# Single Prediction
-POST /predict
-Content-Type: multipart/form-data
-Body: file=<image>
-
-# Batch Prediction
-POST /predict/batch
-Content-Type: multipart/form-data
-Body: files=<image1>, files=<image2>, ...
 
 # Metrics
 GET /metrics
@@ -201,94 +231,61 @@ GET /metrics
 POST /metrics/reset
 ```
 
-### Beispiel: Single Prediction
+## 🔍 Benchmark-Metriken (llmperf-style)
+
+### Sequential Benchmark
+
+Testet Anfragen nacheinander:
 
 ```bash
-curl -X POST \
-  -F "file=@image.png" \
-  http://localhost:8000/predict
-
-Response:
-{
-  "predictions": [
-    {"class": "cat", "probability": 0.85},
-    {"class": "dog", "probability": 0.10},
-    ...
-  ],
-  "top_class": "cat",
-  "confidence": 0.85,
-  "latency_ms": 12.5,
-  "device": "cuda:0",
-  "gpu_metrics": {
-    "gpu_memory_allocated_mb": 450.2,
-    "gpu_utilization_percent": 78
-  }
-}
-```
-
-### Beispiel: Batch Prediction
-
-```bash
-curl -X POST \
-  -F "files=@img1.png" \
-  -F "files=@img2.png" \
-  -F "files=@img3.png" \
-  http://localhost:8000/predict/batch
-
-Response:
-{
-  "batch_size": 3,
-  "total_latency_ms": 25.3,
-  "latency_per_image_ms": 8.4,
-  "throughput_images_per_sec": 119.0,
-  "results": [...]
-}
-```
-
-## 🔍 Benchmark-Szenarien
-
-### 1. Sequential Benchmark
-
-Testet Einzelanfragen nacheinander:
-
-```bash
-python3 benchmark/benchmark.py \
+python3 benchmark/llm_benchmark.py \
   --cluster-url http://cluster:8000 \
-  --requests 100 \
+  --requests 50 \
   --mode sequential
 ```
 
-### 2. Concurrent Benchmark
+**Metriken:**
+- Mean/Median/P95/P99 Latenz
+- Tokens/Sekunde (Durchsatz)
+- GPU-Auslastung
+
+### Concurrent Benchmark
 
 Testet parallele Anfragen:
 
 ```bash
-python3 benchmark/benchmark.py \
+python3 benchmark/llm_benchmark.py \
   --cluster-url http://cluster:8000 \
-  --requests 100 \
-  --concurrency 10 \
+  --requests 50 \
+  --concurrency 5 \
   --mode concurrent
 ```
 
-### 3. Batch Benchmark
+### Streaming Benchmark
 
-Testet verschiedene Batch-Größen:
+Testet Time-to-First-Token (TTFT):
 
 ```bash
-python3 benchmark/benchmark.py \
+python3 benchmark/llm_benchmark.py \
   --cluster-url http://cluster:8000 \
-  --mode batch
+  --requests 20 \
+  --mode streaming
 ```
 
-### 4. Cluster vs Edge Comparison
+**Streaming-Metriken:**
+- **TTFT** (Time to First Token): Zeit bis zum ersten generierten Token
+- **Inter-Token Latency**: Durchschnittliche Zeit zwischen Tokens
+- **Tokens/Sekunde**: Streaming-Durchsatz
+
+### Cluster vs Edge Comparison
 
 Vergleicht Cluster und Edge Performance:
 
 ```bash
-python3 benchmark/benchmark.py \
+python3 benchmark/llm_benchmark.py \
   --cluster-url http://cluster:8000 \
   --edge-url http://edge:8000 \
-  --requests 100 \
+  --requests 50 \
   --mode compare \
   --output results.json
 ```
@@ -297,55 +294,67 @@ Beispiel-Output:
 
 ```
 =================================================================
-LATENCY COMPARISON: Cluster vs Edge
+LLM LATENCY COMPARISON: Cluster vs Edge
 =================================================================
 
 --- CLUSTER ---
   Success Rate: 100.0%
-  Total Latency:
-    Mean:      15.32 ms
-    Median:    14.89 ms
-    P95:       22.45 ms
-    P99:       28.12 ms
-  GPU Inference: 8.50 ms
-  Network: 6.82 ms
+  Latency:
+    Mean:      245.32 ms
+    Median:    238.45 ms
+    P95:       312.67 ms
+    P99:       345.23 ms
+  Throughput:
+    Mean:      42.5 tokens/sec
+    Total tokens: 12,450
 
 --- EDGE ---
   Success Rate: 100.0%
-  Total Latency:
-    Mean:      145.67 ms
-    Median:    142.33 ms
-    P95:       178.90 ms
-    P99:       195.23 ms
-  GPU Inference: 8.45 ms
-  Network: 137.22 ms
+  Latency:
+    Mean:      587.91 ms
+    Median:    572.12 ms
+    P95:       678.34 ms
+    P99:       723.45 ms
+  Throughput:
+    Mean:      38.2 tokens/sec
+    Total tokens: 11,234
 
 --- COMPARISON ---
-  Cluster Mean Latency: 15.32 ms
-  Edge Mean Latency:    145.67 ms
-  Difference:           +130.35 ms (+850.7%)
-  → Edge is SLOWER by 130.35 ms
+  Cluster Mean Latency: 245.32 ms
+  Edge Mean Latency:    587.91 ms
+  Difference:           +342.59 ms (+139.6%)
+
+  Cluster Throughput: 42.5 tokens/sec
+  Edge Throughput:    38.2 tokens/sec
 ```
 
-## 🎯 Node Labels für Deployment
+## 🎯 Unterstützte LLM-Modelle
 
-Für korrektes Deployment benötigst du diese Node-Labels:
+Die Anwendung unterstützt alle vLLM-kompatiblen Modelle. Ändere einfach die `MODEL_NAME` Umgebungsvariable:
 
-```bash
-# GPU Nodes markieren
-kubectl label nodes <node-name> accelerator=nvidia-gpu
+### Empfohlene Modelle:
 
-# Cluster Nodes (zentral)
-kubectl label nodes <node-name> node-location=cluster
+**Kleine Modelle (< 10B, 1x GPU):**
+- `microsoft/Phi-3-mini-4k-instruct` (3.8B) - **Default**
+- `microsoft/Phi-3-small-8k-instruct` (7B)
+- `meta-llama/Llama-3.2-3B-Instruct` (3B)
 
-# Edge Nodes (remote)
-kubectl label nodes <node-name> node-location=edge
-```
+**Mittlere Modelle (10-20B, 1-2x GPUs):**
+- `mistralai/Mistral-7B-Instruct-v0.3` (7B)
+- `meta-llama/Llama-3.2-8B-Instruct` (8B)
 
-Optional: Taints für Edge Nodes
+**Große Modelle (> 20B, 2+ GPUs):**
+- `meta-llama/Meta-Llama-3-70B-Instruct` (70B)
 
-```bash
-kubectl taint nodes <edge-node> node-role.kubernetes.io/edge=true:NoSchedule
+Modell ändern:
+
+```yaml
+# In k8s/inference-deployment.yaml oder k8s/edge-deployment.yaml
+env:
+- name: MODEL_NAME
+  value: "mistralai/Mistral-7B-Instruct-v0.3"
+- name: MAX_MODEL_LEN
+  value: "8192"
 ```
 
 ## 🔧 Konfiguration
@@ -353,13 +362,11 @@ kubectl taint nodes <edge-node> node-role.kubernetes.io/edge=true:NoSchedule
 ### Environment Variables
 
 ```bash
-# Training
-EPOCHS=10
-BATCH_SIZE=128
-LEARNING_RATE=0.1
+# Model
+MODEL_NAME=microsoft/Phi-3-mini-4k-instruct
+MAX_MODEL_LEN=4096
 
 # Inference
-MODEL_PATH=/models/model.pth
 HOST=0.0.0.0
 PORT=8000
 
@@ -375,16 +382,16 @@ Standardmäßig:
 ```yaml
 resources:
   requests:
-    memory: "4Gi"
-    cpu: "2"
+    memory: "16Gi"
+    cpu: "4"
     nvidia.com/gpu: "1"
   limits:
-    memory: "8Gi"
-    cpu: "4"
+    memory: "32Gi"
+    cpu: "8"
     nvidia.com/gpu: "1"
 ```
 
-Passe diese nach Bedarf in den YAML-Dateien an.
+Passe diese nach Bedarf für größere Modelle an (z.B. 2-4 GPUs für 70B Modelle).
 
 ## 📈 Monitoring
 
@@ -398,15 +405,15 @@ curl http://<service>:8000/metrics | jq .
 {
   "system_metrics": {
     "gpu_available": true,
-    "gpu_memory_allocated_mb": 512.5,
-    "gpu_utilization_percent": 75,
-    "gpu_temperature_c": 68
+    "gpu_memory_allocated_mb": 6842.5,
+    "gpu_utilization_percent": 85,
+    "gpu_temperature_c": 72
   },
   "latency_stats": {
-    "count": 1000,
-    "mean_ms": 12.5,
-    "p95_ms": 18.2,
-    "p99_ms": 22.1
+    "count": 500,
+    "mean_ms": 245.2,
+    "p95_ms": 312.8,
+    "p99_ms": 378.1
   }
 }
 ```
@@ -414,146 +421,160 @@ curl http://<service>:8000/metrics | jq .
 ### Logs anschauen
 
 ```bash
-# Training Logs
-kubectl logs -l app=ml-training -f
+# Cluster Logs
+make logs-inference
 
-# Inference Logs (Cluster)
-kubectl logs -l app=ml-inference,location=cluster -f
+# Edge Logs
+make logs-edge
 
-# Inference Logs (Edge)
-kubectl logs -l app=ml-inference,location=edge -f
+# Oder direkt mit kubectl
+kubectl logs -l app=llm-inference,location=cluster -f
 ```
 
 ## 🧪 Lokales Testen (ohne Kubernetes)
-
-### Training lokal ausführen
 
 ```bash
 # Dependencies installieren
 pip install -r requirements.txt
 
-# Training starten
-python src/train.py --epochs 2 --batch-size 64
-```
-
-### Inference lokal starten
-
-```bash
-# Inference Server starten
-python src/inference.py
+# Inference Server starten (benötigt GPU)
+MODEL_NAME=microsoft/Phi-3-mini-4k-instruct python src/inference.py
 
 # In einem anderen Terminal testen
 curl http://localhost:8000/health
+
+# Chat Completion testen
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"default","messages":[{"role":"user","content":"Hi!"}],"max_tokens":50}' \
+  | jq .
 ```
 
 ## 🐛 Troubleshooting
 
-### Training Job hängt
+### Pods starten nicht
 
 ```bash
-# Status prüfen
-kubectl describe job ml-training-job
+# Pod Status prüfen
+kubectl get pods -l app=llm-inference
 
 # Events prüfen
-kubectl get events --sort-by='.lastTimestamp'
+kubectl describe pod <pod-name>
 
 # Logs prüfen
-kubectl logs -l app=ml-training
+kubectl logs <pod-name>
 ```
 
 ### GPU nicht gefunden
 
 ```bash
-# GPU Operator Status
-kubectl get pods -n gpu-operator-resources
-
-# Node GPU Status
-kubectl describe node <node-name> | grep -i gpu
+# GPU Nodes prüfen
+kubectl get nodes -o json | jq '.items[].status.allocatable | select(."nvidia.com/gpu" != null)'
 
 # NVIDIA Device Plugin
 kubectl get ds -n kube-system nvidia-device-plugin-daemonset
+
+# GPU Operator
+kubectl get pods -n gpu-operator-resources
 ```
 
-### Inference Service nicht erreichbar
+### Model Download fehlschlägt
+
+Das Modell wird beim Start automatisch von HuggingFace heruntergeladen. Bei Problemen:
 
 ```bash
-# Pod Status
-kubectl get pods -l app=ml-inference
+# HuggingFace Token setzen (für gated models)
+kubectl create secret generic hf-secret \
+  --from-literal=HF_TOKEN=your_token
 
-# Service Status
-kubectl get svc -l app=ml-inference
-
-# Logs prüfen
-kubectl logs -l app=ml-inference --tail=50
+# Und in deployment.yaml hinzufügen:
+env:
+- name: HF_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: hf-secret
+      key: HF_TOKEN
 ```
 
-### Hohe Latenz
+### Out of Memory (OOM)
 
-Mögliche Ursachen:
-- Network-Latenz zwischen Nodes
-- GPU nicht verfügbar (CPU Fallback)
-- Unzureichende Resources
-- Throttling
-
-```bash
-# GPU Usage in Pod prüfen
-kubectl exec -it <pod-name> -- nvidia-smi
-
-# Resource Usage prüfen
-kubectl top pods -l app=ml-inference
-```
-
-## 📝 Erweitungen & Anpassungen
-
-### Anderes Modell verwenden
-
-Bearbeite `src/model.py`:
-
-```python
-def create_model(device='cuda'):
-    model = YourCustomModel()
-    model = model.to(device)
-    return model
-```
-
-### Anderes Dataset
-
-Bearbeite `src/train.py` und ändere die Data Loaders.
-
-### Andere Metriken
-
-Erweitere `src/metrics.py` um zusätzliche Metriken.
-
-## 🤝 Contributing
-
-Contributions willkommen! Bitte:
-1. Fork das Repository
-2. Feature Branch erstellen
-3. Changes committen
-4. Pull Request erstellen
-
-## 📄 Lizenz
-
-MIT License - siehe LICENSE Datei
-
-## 🔗 Ressourcen
-
-- [PyTorch Documentation](https://pytorch.org/docs/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Kubernetes GPU Support](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/)
-- [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/getting-started.html)
+Für größere Modelle:
+- Erhöhe `memory` Limits in Deployments
+- Reduziere `MAX_MODEL_LEN`
+- Verwende kleineres Modell
+- Nutze Tensor Parallelism (`tensor_parallel_size`)
 
 ## 💡 Tipps
 
-1. **Training beschleunigen**: Erhöhe `batch_size` und nutze mehrere GPUs
-2. **Inference optimieren**: Nutze Batch-Endpoints für höheren Durchsatz
-3. **Latenz reduzieren**: Deploy Inference nah am Client (Edge)
-4. **Kosten sparen**: Nutze Spot/Preemptible Instances für Training
-5. **Monitoring**: Integriere Prometheus für langfristiges Monitoring
+1. **Model wählen**: Phi-3-mini ist perfekt für Tests (schnell, klein, gut)
+2. **Batching**: vLLM batcht automatisch Anfragen für maximalen Durchsatz
+3. **Streaming**: Nutze `stream=true` für bessere UX bei Chat-Anwendungen
+4. **Caching**: emptyDir Volume cacht das Modell (kein erneuter Download)
+5. **Multi-GPU**: Für 70B+ Modelle setze `tensor_parallel_size=2+`
 
-## 📧 Support
+## 📝 Erweitungen
 
-Bei Fragen oder Problemen:
-- Issue erstellen im Repository
-- Logs und Konfiguration bereitstellen
-- Kubernetes & GPU Versionen angeben
+### Anderes Modell verwenden
+
+Ändere in `k8s/inference-deployment.yaml`:
+
+```yaml
+env:
+- name: MODEL_NAME
+  value: "meta-llama/Llama-3.2-8B-Instruct"
+- name: MAX_MODEL_LEN
+  value: "8192"
+```
+
+### Prometheus-Integration
+
+vLLM exportiert Prometheus-Metriken. Füge einen ServiceMonitor hinzu:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: llm-inference
+spec:
+  selector:
+    matchLabels:
+      app: llm-inference
+  endpoints:
+  - port: http
+    path: /metrics
+```
+
+### Autoscaling (HPA)
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-inference-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-inference-cluster
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: nvidia.com/gpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+## 🔗 Ressourcen
+
+- [vLLM Documentation](https://docs.vllm.ai/)
+- [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
+- [Phi-3 Model Card](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct)
+- [Kubernetes GPU Support](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/)
+- [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/getting-started.html)
+
+## 📄 Lizenz
+
+MIT License
