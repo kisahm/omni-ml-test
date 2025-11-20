@@ -1,17 +1,19 @@
-.PHONY: help build push deploy-inference deploy-edge deploy-all clean benchmark status
+.PHONY: help build push deploy-inference deploy-edge deploy-all clean benchmark status buildx-setup
 
 # Configuration
 IMAGE_NAME ?= ml-app
 IMAGE_TAG ?= latest
 REGISTRY ?= kisahm
 FULL_IMAGE = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+PLATFORM ?= linux/amd64
 
 help:
 	@echo "LLM Kubernetes Test Application - Makefile"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  build              - Build Docker image"
-	@echo "  push               - Push Docker image to registry"
+	@echo "  buildx-setup       - Setup Docker Buildx for cross-platform builds"
+	@echo "  build              - Build Docker image for AMD64 (x86_64)"
+	@echo "  push               - Build and push Docker image to registry"
 	@echo "  deploy-inference   - Deploy LLM inference service (cluster)"
 	@echo "  deploy-edge        - Deploy LLM inference service (edge)"
 	@echo "  deploy-all         - Deploy both cluster and edge inference"
@@ -21,16 +23,36 @@ help:
 	@echo "  logs-inference     - Show inference logs (cluster)"
 	@echo "  logs-edge          - Show inference logs (edge)"
 	@echo ""
+	@echo "Building on Apple Silicon (M1/M2/M3):"
+	@echo "  The images are built for linux/amd64 (x86_64) by default"
+	@echo "  Run 'make buildx-setup' once to configure buildx"
+	@echo ""
 
-build:
-	@echo "Building Docker image: $(FULL_IMAGE)"
-	docker build -t $(FULL_IMAGE) .
-	docker tag $(FULL_IMAGE) $(REGISTRY)/$(IMAGE_NAME):latest
+buildx-setup:
+	@echo "Setting up Docker Buildx for cross-platform builds..."
+	@docker buildx create --name multiarch --use 2>/dev/null || docker buildx use multiarch
+	@docker buildx inspect --bootstrap
+	@echo "✓ Buildx setup complete!"
 
-push: build
-	@echo "Pushing Docker image: $(FULL_IMAGE)"
-	docker push $(FULL_IMAGE)
-	docker push $(REGISTRY)/$(IMAGE_NAME):latest
+build: buildx-setup
+	@echo "Building Docker image for $(PLATFORM): $(FULL_IMAGE)"
+	docker buildx build \
+		--platform $(PLATFORM) \
+		-t $(FULL_IMAGE) \
+		-t $(REGISTRY)/$(IMAGE_NAME):latest \
+		--load \
+		.
+	@echo "✓ Image built successfully for $(PLATFORM)"
+
+push: buildx-setup
+	@echo "Building and pushing Docker image for $(PLATFORM): $(FULL_IMAGE)"
+	docker buildx build \
+		--platform $(PLATFORM) \
+		-t $(FULL_IMAGE) \
+		-t $(REGISTRY)/$(IMAGE_NAME):latest \
+		--push \
+		.
+	@echo "✓ Image pushed successfully to $(REGISTRY)/$(IMAGE_NAME):latest"
 
 deploy-inference:
 	@echo "Deploying LLM inference service (cluster)..."
