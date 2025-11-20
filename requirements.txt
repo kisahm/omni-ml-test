@@ -2,7 +2,6 @@
 vllm==0.5.4
 transformers==4.44.0
 tokenizers==0.19.1
-torch==2.3.0
 
 # API Framework
 fastapi==0.104.1

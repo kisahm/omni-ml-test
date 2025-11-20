@@ -33,9 +33,9 @@ WORKDIR /app
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 
-# Install PyTorch with CUDA 12.1 support
+# Install PyTorch with CUDA 12.1 support (required by vLLM)
 RUN pip install --no-cache-dir \
-    torch==2.3.0 \
+    torch==2.4.0 \
     --index-url https://download.pytorch.org/whl/cu121
 
 # Install vLLM and other dependencies
