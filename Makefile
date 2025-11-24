@@ -1,4 +1,4 @@
-.PHONY: help build push deploy-inference deploy-edge deploy-all clean benchmark status buildx-setup
+.PHONY: help build push deploy-inference deploy-edge deploy-all rollout clean benchmark status buildx-setup
 
 # Configuration
 IMAGE_NAME ?= ml-app
@@ -17,6 +17,7 @@ help:
 	@echo "  deploy-inference   - Deploy LLM inference service (cluster)"
 	@echo "  deploy-edge        - Deploy LLM inference service (edge)"
 	@echo "  deploy-all         - Deploy both cluster and edge inference"
+	@echo "  rollout            - Restart deployments to pull new image"
 	@echo "  clean              - Clean up Kubernetes resources"
 	@echo "  benchmark          - Run LLM latency benchmark"
 	@echo "  status             - Show deployment status"
@@ -65,6 +66,15 @@ deploy-edge:
 
 deploy-all: deploy-inference deploy-edge
 	@echo "All LLM inference services deployed!"
+
+rollout:
+	@echo "Restarting deployments to pull new image..."
+	kubectl rollout restart deployment llm-inference-cluster
+	kubectl rollout restart deployment llm-inference-edge -n edge
+	@echo "Waiting for rollout to complete..."
+	kubectl rollout status deployment llm-inference-cluster
+	kubectl rollout status deployment llm-inference-edge -n edge
+	@echo "✓ Rollout complete!"
 
 clean:
 	@echo "Cleaning up Kubernetes resources..."
