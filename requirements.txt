@@ -27,5 +27,4 @@ aiofiles>=23.2.1
 openai>=1.35.0
 ray>=2.32.0
 
-# Missing vLLM dependencies
-pyairports==0.0.1
+# Note: pyairports is mocked in src/inference.py (not installed)
