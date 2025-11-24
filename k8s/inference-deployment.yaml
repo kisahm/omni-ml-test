@@ -87,35 +87,15 @@ spec:
         emptyDir:
           sizeLimit: 50Gi
 
-      # Schedule on GPU nodes in the cluster
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: accelerator
-                operator: In
-                values:
-                - nvidia-gpu
-                - gpu
-              - key: node-location
-                operator: In
-                values:
-                - cluster
-                - central
+      # Schedule on cast.ai GPU nodes (in-cluster)
+      nodeSelector:
+        scheduling.cast.ai/node-template: "gpu-test-incluster"
 
-        # Prefer to spread across different nodes
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - llm-inference
-              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "scheduling.cast.ai/node-template"
+        value: "gpu-test-incluster"
+        effect: "NoSchedule"
+        operator: "Equal"
 
 ---
 apiVersion: v1

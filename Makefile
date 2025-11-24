@@ -61,7 +61,6 @@ deploy-inference:
 
 deploy-edge:
 	@echo "Deploying LLM inference service (edge)..."
-	kubectl apply -f k8s/configmap.yaml
 	kubectl apply -f k8s/edge-deployment.yaml
 
 deploy-all: deploy-inference deploy-edge
@@ -79,23 +78,32 @@ logs-inference:
 
 logs-edge:
 	@echo "Fetching LLM inference logs (edge)..."
-	kubectl logs -l app=llm-inference,location=edge -f
+	kubectl logs -n edge -l app=llm-inference,location=edge -f
 
 status:
-	@echo "=== LLM Inference Deployments ==="
+	@echo "=== LLM Inference Deployments (Cluster) ==="
 	kubectl get deployments -l app=llm-inference
 	@echo ""
-	@echo "=== Services ==="
+	@echo "=== LLM Inference Deployments (Edge) ==="
+	kubectl get deployments -n edge -l app=llm-inference
+	@echo ""
+	@echo "=== Services (Cluster) ==="
 	kubectl get services -l app=llm-inference
 	@echo ""
-	@echo "=== Pods ==="
+	@echo "=== Services (Edge) ==="
+	kubectl get services -n edge -l app=llm-inference
+	@echo ""
+	@echo "=== Pods (Cluster) ==="
 	kubectl get pods -l app=llm-inference
+	@echo ""
+	@echo "=== Pods (Edge) ==="
+	kubectl get pods -n edge -l app=llm-inference
 
 benchmark:
 	@echo "Running LLM benchmark..."
 	@echo "Getting service URLs..."
 	$(eval CLUSTER_URL := $(shell kubectl get svc llm-inference-cluster-service -o jsonpath='{.spec.clusterIP}'))
-	$(eval EDGE_URL := $(shell kubectl get svc llm-inference-edge-service -o jsonpath='{.spec.clusterIP}'))
+	$(eval EDGE_URL := $(shell kubectl get svc llm-inference-edge-service -n edge -o jsonpath='{.spec.clusterIP}'))
 	python3 benchmark/llm_benchmark.py \
 		--cluster-url http://$(CLUSTER_URL):8000 \
 		--edge-url http://$(EDGE_URL):8000 \

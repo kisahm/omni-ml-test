@@ -1,7 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edge
+  labels:
+    omni.cast.ai/enable-scheduling: "true"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: llm-inference-edge
+  namespace: edge
   labels:
     app: llm-inference
     component: inference
@@ -89,54 +98,22 @@ spec:
         emptyDir:
           sizeLimit: 50Gi
 
-      # Schedule ONLY on edge nodes (different region)
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: accelerator
-                operator: In
-                values:
-                - nvidia-gpu
-                - gpu
-              - key: node-location
-                operator: In
-                values:
-                - edge
-                - remote
+      # Schedule on cast.ai GPU nodes (edge)
+      nodeSelector:
+        scheduling.cast.ai/node-template: "gpu-test-edge"
 
-        # Prefer to spread across different edge nodes
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - llm-inference
-                - key: location
-                  operator: In
-                  values:
-                  - edge
-              topologyKey: kubernetes.io/hostname
-
-      # Tolerate edge node taints (if any)
       tolerations:
-      - key: "node-role.kubernetes.io/edge"
-        operator: "Exists"
+      - key: "scheduling.cast.ai/node-template"
+        value: "gpu-test-edge"
         effect: "NoSchedule"
-      - key: "high-latency"
-        operator: "Exists"
-        effect: "NoSchedule"
+        operator: "Equal"
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: llm-inference-edge-service
+  namespace: edge
   labels:
     app: llm-inference
     location: edge
