@@ -3,7 +3,18 @@ LLM Inference Service with vLLM and FastAPI
 Provides OpenAI-compatible API for LLM inference with performance tracking
 """
 import os
+import sys
 import time
+
+# Workaround for missing pyairports dependency in outlines
+# Mock the module to prevent import errors
+class MockModule:
+    def __getattr__(self, name):
+        return None
+
+sys.modules['pyairports'] = MockModule()
+sys.modules['pyairports.airports'] = MockModule()
+
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
