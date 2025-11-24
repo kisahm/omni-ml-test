@@ -101,7 +101,7 @@ spec:
       # Schedule on cast.ai GPU nodes (edge)
       nodeSelector:
         scheduling.cast.ai/node-template: "gpu-test-edge"
-
+        topology.kubernetes.io/region: ap-southeast-1
       tolerations:
       - key: "scheduling.cast.ai/node-template"
         value: "gpu-test-edge"
