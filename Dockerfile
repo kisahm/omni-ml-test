@@ -44,6 +44,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Explicitly install pyairports (required by vLLM's outlines module)
 RUN pip install --no-cache-dir pyairports==0.0.1
 
+# Verify pyairports is installed
+RUN python -c "import pyairports; print('✓ pyairports successfully installed')" || \
+    (echo "✗ pyairports installation failed!" && exit 1)
+
 # Copy application code
 COPY src/ ./src/
 COPY benchmark/ ./benchmark/
