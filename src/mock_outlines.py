@@ -6,18 +6,28 @@ import sys
 import os
 
 # Disable outlines by mocking the module
+class MockAirportsModule:
+    """Mock for pyairports.airports module"""
+    AIRPORT_LIST = []  # Empty list to make it iterable
+
+    def __getattr__(self, name):
+        return {}
+
+class MockPyairportsModule:
+    """Mock for pyairports module"""
+    airports = MockAirportsModule()
+
+    def __getattr__(self, name):
+        return {}
+
 class MockOutlines:
     def __getattr__(self, name):
-        # Return empty list for AIRPORT_LIST to make it iterable
-        if name == 'AIRPORT_LIST':
-            return []
-        # Return empty dict for other potential data structures
         return {}
 
 sys.modules['outlines'] = MockOutlines()
 sys.modules['outlines.types'] = MockOutlines()
 sys.modules['outlines.types.airports'] = MockOutlines()
-sys.modules['pyairports'] = MockOutlines()
-sys.modules['pyairports.airports'] = MockOutlines()
+sys.modules['pyairports'] = MockPyairportsModule()
+sys.modules['pyairports.airports'] = MockAirportsModule()
 
 print("✓ Outlines/pyairports mocked successfully")

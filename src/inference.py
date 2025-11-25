@@ -8,16 +8,23 @@ import time
 
 # Workaround for missing pyairports dependency in outlines
 # Mock the module to prevent import errors
-class MockModule:
+class MockAirportsModule:
+    """Mock for pyairports.airports module"""
+    AIRPORT_LIST = []  # Empty list to make it iterable
+
     def __getattr__(self, name):
-        # Return empty list for AIRPORT_LIST to make it iterable
-        if name == 'AIRPORT_LIST':
-            return []
-        # Return empty dict for other potential data structures
         return {}
 
-sys.modules['pyairports'] = MockModule()
-sys.modules['pyairports.airports'] = MockModule()
+class MockPyairportsModule:
+    """Mock for pyairports module"""
+    airports = MockAirportsModule()
+
+    def __getattr__(self, name):
+        return {}
+
+# Create and install the mocks
+sys.modules['pyairports'] = MockPyairportsModule()
+sys.modules['pyairports.airports'] = MockAirportsModule()
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
