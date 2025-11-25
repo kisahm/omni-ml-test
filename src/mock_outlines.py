@@ -8,7 +8,11 @@ import os
 # Disable outlines by mocking the module
 class MockOutlines:
     def __getattr__(self, name):
-        return None
+        # Return empty list for AIRPORT_LIST to make it iterable
+        if name == 'AIRPORT_LIST':
+            return []
+        # Return empty dict for other potential data structures
+        return {}
 
 sys.modules['outlines'] = MockOutlines()
 sys.modules['outlines.types'] = MockOutlines()

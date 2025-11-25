@@ -10,7 +10,11 @@ import time
 # Mock the module to prevent import errors
 class MockModule:
     def __getattr__(self, name):
-        return None
+        # Return empty list for AIRPORT_LIST to make it iterable
+        if name == 'AIRPORT_LIST':
+            return []
+        # Return empty dict for other potential data structures
+        return {}
 
 sys.modules['pyairports'] = MockModule()
 sys.modules['pyairports.airports'] = MockModule()
