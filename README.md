@@ -285,39 +285,76 @@ python3 benchmark/llm_benchmark.py \
 Example output:
 
 ```
-=================================================================
+# make benchmark
+Checking benchmark dependencies...
+✓ Benchmark dependencies installed
+Running LLM benchmark...
+Getting service URLs...
+python3 benchmark/llm_benchmark.py \
+	--cluster-url http://10.100.150.54:8000 \
+	--edge-url http://10.100.81.152:8000 \
+	--requests 50 \
+	--max-tokens 256 \
+	--mode compare
+
+======================================================================
 LLM LATENCY COMPARISON: Cluster vs Edge
-=================================================================
+======================================================================
+
+--- Testing CLUSTER deployment ---
+
+Running sequential benchmark: 50 requests
+  Progress: 0/50
+  Progress: 10/50
+  Progress: 20/50
+  Progress: 30/50
+  Progress: 40/50
+
+--- Testing EDGE deployment ---
+
+Running sequential benchmark: 50 requests
+  Progress: 0/50
+  Progress: 10/50
+  Progress: 20/50
+  Progress: 30/50
+  Progress: 40/50
+
+======================================================================
+RESULTS SUMMARY
+======================================================================
 
 --- CLUSTER ---
   Success Rate: 100.0%
   Latency:
-    Mean:      245.32 ms
-    Median:    238.45 ms
-    P95:       312.67 ms
-    P99:       345.23 ms
+    Mean:    8046.98 ms
+    Median:  8297.15 ms
+    P95:     8605.43 ms
+    P99:     8661.77 ms
   Throughput:
-    Mean:      42.5 tokens/sec
-    Total tokens: 12,450
+    Mean:      30.63 tokens/sec
+    Median:    30.86 tokens/sec
+    Total tokens: 12314
 
 --- EDGE ---
   Success Rate: 100.0%
   Latency:
-    Mean:      587.91 ms
-    Median:    572.12 ms
-    P95:       678.34 ms
-    P99:       723.45 ms
+    Mean:    8260.20 ms
+    Median:  8663.40 ms
+    P95:     8716.29 ms
+    P99:     8815.67 ms
   Throughput:
-    Mean:      38.2 tokens/sec
-    Total tokens: 11,234
+    Mean:      30.68 tokens/sec
+    Median:    30.75 tokens/sec
+    Total tokens: 12173
 
 --- COMPARISON ---
-  Cluster Mean Latency: 245.32 ms
-  Edge Mean Latency:    587.91 ms
-  Difference:           +342.59 ms (+139.6%)
+  Cluster Mean Latency: 8046.98 ms
+  Edge Mean Latency:    8260.20 ms
+  Difference:           +213.23 ms (+2.6%)
 
-  Cluster Throughput: 42.5 tokens/sec
-  Edge Throughput:    38.2 tokens/sec
+  Cluster Throughput: 30.63 tokens/sec
+  Edge Throughput:    30.68 tokens/sec
+
 ```
 
 ## 🎯 Supported LLM Models
