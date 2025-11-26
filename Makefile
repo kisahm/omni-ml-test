@@ -1,4 +1,4 @@
-.PHONY: help build push deploy-inference deploy-edge deploy-all rollout clean benchmark status buildx-setup
+.PHONY: help build push deploy-inference deploy-edge deploy-all rollout clean benchmark benchmark-deps status buildx-setup
 
 # Configuration
 IMAGE_NAME ?= ml-app
@@ -19,6 +19,7 @@ help:
 	@echo "  deploy-all         - Deploy both cluster and edge inference"
 	@echo "  rollout            - Restart deployments to pull new image"
 	@echo "  clean              - Clean up Kubernetes resources"
+	@echo "  benchmark-deps     - Install benchmark dependencies"
 	@echo "  benchmark          - Run LLM latency benchmark"
 	@echo "  status             - Show deployment status"
 	@echo "  logs-inference     - Show inference logs (cluster)"
@@ -109,7 +110,12 @@ status:
 	@echo "=== Pods (Edge) ==="
 	kubectl get pods -n edge -l app=llm-inference
 
-benchmark:
+benchmark-deps:
+	@echo "Checking benchmark dependencies..."
+	@pip3 install -q -r benchmark/requirements.txt
+	@echo "✓ Benchmark dependencies installed"
+
+benchmark: benchmark-deps
 	@echo "Running LLM benchmark..."
 	@echo "Getting service URLs..."
 	$(eval CLUSTER_URL := $(shell kubectl get svc llm-inference-cluster-service -o jsonpath='{.spec.clusterIP}'))
