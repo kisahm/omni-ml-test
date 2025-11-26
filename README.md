@@ -282,7 +282,7 @@ python3 benchmark/llm_benchmark.py \
   --output results.json
 ```
 
-Example output:
+Example output (comparing eu-central-1 cluster with ap-southeast-1 edge node):
 
 ```
 # make benchmark
