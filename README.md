@@ -1,15 +1,15 @@
 # LLM Kubernetes Test Application
 
-Eine vollständige LLM-Inference-Anwendung für Kubernetes mit vLLM und GPU-Unterstützung, um Performance-Unterschiede zwischen Cluster- und Edge-Deployments zu messen.
+A complete LLM inference application for Kubernetes with vLLM and GPU support, designed to measure performance differences between cluster and edge deployments.
 
-## 🎯 Projektziel
+## 🎯 Project Goal
 
-Diese Anwendung ermöglicht es, LLM-Inference auf Kubernetes mit GPUs durchzuführen und die Performance zwischen verschiedenen Deployment-Szenarien zu vergleichen:
+This application enables LLM inference on Kubernetes with GPUs and allows comparing performance across different deployment scenarios:
 
-- **Cluster Deployment**: Inference-Server im zentralen Kubernetes-Cluster (niedrige Latenz)
-- **Edge Deployment**: Inference-Server auf Edge-Nodes in anderen Regionen (hohe Latenz)
+- **Cluster Deployment**: Inference servers in the central Kubernetes cluster (low latency)
+- **Edge Deployment**: Inference servers on edge nodes in different regions (high latency)
 
-## 🏗️ Architektur
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -22,6 +22,7 @@ Diese Anwendung ermöglicht es, LLM-Inference auf Kubernetes mit GPUs durchzufü
 │  │   - GPU Acceleration (1x GPU/Pod)      │                 │
 │  │   - Low Latency                        │                 │
 │  │   - Model: Phi-3-mini-4k-instruct      │                 │
+│  │   - dtype: float16 (half)              │                 │
 │  └────────────────────────────────────────┘                 │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
@@ -38,124 +39,115 @@ Diese Anwendung ermöglicht es, LLM-Inference auf Kubernetes mit GPUs durchzufü
 │  │   - GPU Acceleration (1x GPU/Pod)      │                 │
 │  │   - High Latency                       │                 │
 │  │   - Model: Phi-3-mini-4k-instruct      │                 │
+│  │   - dtype: float16 (Tesla T4)          │                 │
 │  └────────────────────────────────────────┘                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## 📋 Features
 
-- ✅ **vLLM Engine**: Hochoptimierte LLM-Inference mit PagedAttention
-- ✅ **OpenAI-kompatible API**: `/v1/chat/completions` und `/v1/completions`
-- ✅ **GPU-Beschleunigung**: Echte GPU-Workloads mit CUDA
-- ✅ **Streaming Support**: Server-Sent Events (SSE) für Token-Streaming
-- ✅ **llmperf-kompatibel**: Benchmark-Metriken (TTFT, Throughput, Latenz)
-- ✅ **Performance-Monitoring**: GPU-Auslastung, Token/s, Latenz
-- ✅ **Kubernetes-Ready**: Deployments für Cluster und Edge
-- ✅ **Vortrainierte Modelle**: Phi-3-mini-4k (3.8B Parameter)
+- ✅ **vLLM Engine**: Highly optimized LLM inference with PagedAttention
+- ✅ **OpenAI-compatible API**: `/v1/chat/completions` and `/v1/completions`
+- ✅ **GPU Acceleration**: Real GPU workloads with CUDA
+- ✅ **Streaming Support**: Server-Sent Events (SSE) for token streaming
+- ✅ **llmperf-compatible**: Benchmark metrics (TTFT, throughput, latency)
+- ✅ **Performance Monitoring**: GPU utilization, tokens/s, latency
+- ✅ **Kubernetes-Ready**: Deployments for cluster and edge
+- ✅ **Pre-trained Models**: Phi-3-mini-4k (3.8B parameters)
+- ✅ **Multi-GPU Support**: Configurable dtype for GPU compatibility
 
-## 🛠️ Technologie-Stack
+## 🛠️ Technology Stack
 
 - **LLM Engine**: vLLM 0.5.4
-- **Framework**: PyTorch 2.3.0
-- **API**: FastAPI (OpenAI-kompatibel)
+- **Framework**: PyTorch 2.4.0
+- **API**: FastAPI (OpenAI-compatible)
 - **Container**: Docker (NVIDIA CUDA 12.1)
-- **Orchestrierung**: Kubernetes
+- **Orchestration**: Kubernetes
 - **GPU**: NVIDIA GPUs (CUDA)
 - **Monitoring**: Prometheus-Client, NVML
-- **Modell**: microsoft/Phi-3-mini-4k-instruct (3.8B)
+- **Model**: microsoft/Phi-3-mini-4k-instruct (3.8B)
 
-## 📁 Projektstruktur
+## 📁 Project Structure
 
 ```
 .
 ├── src/
 │   ├── inference.py       # vLLM Inference Service (OpenAI-API)
-│   └── metrics.py         # Performance-Metriken
+│   ├── metrics.py         # Performance metrics
+│   └── mock_outlines.py   # Workaround for pyairports dependency
 ├── k8s/
 │   ├── inference-deployment.yaml  # Cluster Inference
 │   ├── edge-deployment.yaml       # Edge Inference
-│   └── configmap.yaml            # Konfiguration
+│   └── configmap.yaml            # Configuration
 ├── benchmark/
-│   └── llm_benchmark.py   # LLM Latenz-Benchmark (llmperf-style)
+│   ├── llm_benchmark.py   # LLM Latency Benchmark (llmperf-style)
+│   └── requirements.txt   # Benchmark dependencies
 ├── Dockerfile             # vLLM Docker Build
-├── requirements.txt       # Python-Abhängigkeiten
+├── requirements.txt       # Python dependencies
 ├── Makefile              # Build & Deploy Commands
 └── README.md
 ```
 
 ## 🚀 Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
-- Kubernetes-Cluster mit GPU-Nodes
-- NVIDIA GPU Operator installiert
-- Docker Registry Zugriff
-- kubectl konfiguriert
-- Mindestens 16GB GPU-Memory pro Node
+- Kubernetes cluster with GPU nodes
+- NVIDIA GPU Operator installed
+- Docker registry access
+- kubectl configured
+- At least 16GB GPU memory per node
 
-### 2. Image bauen und pushen
+### 1. Build and Push Image
+
+For cross-platform builds (e.g., Mac M1/M2 → x86_64):
 
 ```bash
-# Image bauen
-make build
+# Setup buildx (one-time)
+make buildx-setup
 
-# Image pushen
+# Build and push
 make push
 ```
 
-**Oder manuell:**
+Or manually:
 
 ```bash
-docker build -t kisahm/ml-app:latest .
-docker push kisahm/ml-app:latest
+docker buildx build --platform linux/amd64 -t kisahm/ml-app:latest --push .
 ```
 
-### 3. GPU Nodes labeln
+### 2. Deploy Inference Services
 
 ```bash
-# Cluster Node
-kubectl label nodes <node-name> \
-  accelerator=nvidia-gpu \
-  node-location=cluster
-
-# Edge Node (andere Region)
-kubectl label nodes <edge-node-name> \
-  accelerator=nvidia-gpu \
-  node-location=edge
-```
-
-### 4. Inference Services deployen
-
-```bash
-# Cluster Inference
+# Deploy cluster inference
 make deploy-inference
 
-# Edge Inference
+# Deploy edge inference
 make deploy-edge
 
-# Oder beide gleichzeitig
+# Or deploy both
 make deploy-all
 
-# Status prüfen
+# Check status
 make status
 ```
 
-Das Deployment:
-- Lädt das Phi-3-mini-4k-instruct Modell (ca. 7.5GB)
-- Startet vLLM Engine mit GPU-Beschleunigung
-- Öffnet OpenAI-kompatible API auf Port 8000
-- Start dauert ca. 2-3 Minuten (Model-Download + Initialisierung)
+The deployment will:
+- Download the Phi-3-mini-4k-instruct model (~7.5GB)
+- Start vLLM engine with GPU acceleration
+- Expose OpenAI-compatible API on port 8000
+- Takes ~2-3 minutes to start (model download + initialization)
 
-### 5. Services testen
+### 3. Test Services
 
 ```bash
-# Health Check
+# Health check
 kubectl get svc llm-inference-cluster-service
 CLUSTER_IP=$(kubectl get svc llm-inference-cluster-service -o jsonpath='{.spec.clusterIP}')
 
 curl http://$CLUSTER_IP:8000/health | jq .
 
-# Chat Completion Test
+# Chat completion test
 curl -X POST http://$CLUSTER_IP:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
@@ -166,13 +158,13 @@ curl -X POST http://$CLUSTER_IP:8000/v1/chat/completions \
   }' | jq .
 ```
 
-### 6. Benchmark durchführen
+### 4. Run Benchmark
 
 ```bash
-# Automatischer Benchmark
+# Automatic benchmark (installs dependencies)
 make benchmark
 
-# Oder manuell
+# Or manually
 python3 benchmark/llm_benchmark.py \
   --cluster-url http://<cluster-service>:8000 \
   --edge-url http://<edge-service>:8000 \
@@ -183,13 +175,13 @@ python3 benchmark/llm_benchmark.py \
 
 ## 📊 API Endpoints
 
-### OpenAI-kompatible API
+### OpenAI-compatible API
 
 ```bash
-# List Models
+# List models
 GET /v1/models
 
-# Chat Completion
+# Chat completion
 POST /v1/chat/completions
 Content-Type: application/json
 {
@@ -202,7 +194,7 @@ Content-Type: application/json
   "stream": false
 }
 
-# Text Completion
+# Text completion
 POST /v1/completions
 {
   "model": "default",
@@ -221,21 +213,21 @@ POST /v1/chat/completions
 ### Custom Endpoints
 
 ```bash
-# Health Check
+# Health check
 GET /health
 
 # Metrics
 GET /metrics
 
-# Reset Metrics
+# Reset metrics
 POST /metrics/reset
 ```
 
-## 🔍 Benchmark-Metriken (llmperf-style)
+## 🔍 Benchmark Metrics (llmperf-style)
 
 ### Sequential Benchmark
 
-Testet Anfragen nacheinander:
+Test requests sequentially:
 
 ```bash
 python3 benchmark/llm_benchmark.py \
@@ -244,14 +236,14 @@ python3 benchmark/llm_benchmark.py \
   --mode sequential
 ```
 
-**Metriken:**
-- Mean/Median/P95/P99 Latenz
-- Tokens/Sekunde (Durchsatz)
-- GPU-Auslastung
+**Metrics:**
+- Mean/Median/P95/P99 latency
+- Tokens/second (throughput)
+- GPU utilization
 
 ### Concurrent Benchmark
 
-Testet parallele Anfragen:
+Test parallel requests:
 
 ```bash
 python3 benchmark/llm_benchmark.py \
@@ -263,7 +255,7 @@ python3 benchmark/llm_benchmark.py \
 
 ### Streaming Benchmark
 
-Testet Time-to-First-Token (TTFT):
+Test Time-to-First-Token (TTFT):
 
 ```bash
 python3 benchmark/llm_benchmark.py \
@@ -272,14 +264,14 @@ python3 benchmark/llm_benchmark.py \
   --mode streaming
 ```
 
-**Streaming-Metriken:**
-- **TTFT** (Time to First Token): Zeit bis zum ersten generierten Token
-- **Inter-Token Latency**: Durchschnittliche Zeit zwischen Tokens
-- **Tokens/Sekunde**: Streaming-Durchsatz
+**Streaming Metrics:**
+- **TTFT** (Time to First Token): Time until first generated token
+- **Inter-Token Latency**: Average time between tokens
+- **Tokens/Second**: Streaming throughput
 
 ### Cluster vs Edge Comparison
 
-Vergleicht Cluster und Edge Performance:
+Compare cluster and edge performance:
 
 ```bash
 python3 benchmark/llm_benchmark.py \
@@ -290,7 +282,7 @@ python3 benchmark/llm_benchmark.py \
   --output results.json
 ```
 
-Beispiel-Output:
+Example output:
 
 ```
 =================================================================
@@ -328,28 +320,28 @@ LLM LATENCY COMPARISON: Cluster vs Edge
   Edge Throughput:    38.2 tokens/sec
 ```
 
-## 🎯 Unterstützte LLM-Modelle
+## 🎯 Supported LLM Models
 
-Die Anwendung unterstützt alle vLLM-kompatiblen Modelle. Ändere einfach die `MODEL_NAME` Umgebungsvariable:
+The application supports all vLLM-compatible models. Simply change the `MODEL_NAME` environment variable:
 
-### Empfohlene Modelle:
+### Recommended Models:
 
-**Kleine Modelle (< 10B, 1x GPU):**
+**Small Models (< 10B, 1x GPU):**
 - `microsoft/Phi-3-mini-4k-instruct` (3.8B) - **Default**
 - `microsoft/Phi-3-small-8k-instruct` (7B)
 - `meta-llama/Llama-3.2-3B-Instruct` (3B)
 
-**Mittlere Modelle (10-20B, 1-2x GPUs):**
+**Medium Models (10-20B, 1-2x GPUs):**
 - `mistralai/Mistral-7B-Instruct-v0.3` (7B)
 - `meta-llama/Llama-3.2-8B-Instruct` (8B)
 
-**Große Modelle (> 20B, 2+ GPUs):**
+**Large Models (> 20B, 2+ GPUs):**
 - `meta-llama/Meta-Llama-3-70B-Instruct` (70B)
 
-Modell ändern:
+Change model:
 
 ```yaml
-# In k8s/inference-deployment.yaml oder k8s/edge-deployment.yaml
+# In k8s/inference-deployment.yaml or k8s/edge-deployment.yaml
 env:
 - name: MODEL_NAME
   value: "mistralai/Mistral-7B-Instruct-v0.3"
@@ -357,7 +349,7 @@ env:
   value: "8192"
 ```
 
-## 🔧 Konfiguration
+## 🔧 Configuration
 
 ### Environment Variables
 
@@ -373,11 +365,23 @@ PORT=8000
 # GPU
 CUDA_VISIBLE_DEVICES=0
 NVIDIA_VISIBLE_DEVICES=all
+
+# dtype configuration for GPU compatibility
+VLLM_DTYPE=half  # Use "half" (float16) for Tesla T4 or "auto" for newer GPUs
 ```
+
+### GPU Compatibility
+
+Different GPUs support different data types:
+
+- **Tesla T4** (compute capability 7.5): Use `VLLM_DTYPE=half` (float16)
+- **A100, H100** (compute capability ≥ 8.0): Use `VLLM_DTYPE=auto` (bfloat16)
+
+For fair benchmarking, both deployments use `half` (float16) to eliminate dtype-related performance differences.
 
 ### Resource Requests
 
-Standardmäßig:
+Default configuration:
 
 ```yaml
 resources:
@@ -391,11 +395,11 @@ resources:
     nvidia.com/gpu: "1"
 ```
 
-Passe diese nach Bedarf für größere Modelle an (z.B. 2-4 GPUs für 70B Modelle).
+Adjust as needed for larger models (e.g., 2-4 GPUs for 70B models).
 
 ## 📈 Monitoring
 
-### GPU-Metriken abrufen
+### Get GPU Metrics
 
 ```bash
 # Via API
@@ -418,32 +422,32 @@ curl http://<service>:8000/metrics | jq .
 }
 ```
 
-### Logs anschauen
+### View Logs
 
 ```bash
-# Cluster Logs
+# Cluster logs
 make logs-inference
 
-# Edge Logs
+# Edge logs
 make logs-edge
 
-# Oder direkt mit kubectl
+# Or directly with kubectl
 kubectl logs -l app=llm-inference,location=cluster -f
 ```
 
-## 🧪 Lokales Testen (ohne Kubernetes)
+## 🧪 Local Testing (without Kubernetes)
 
 ```bash
-# Dependencies installieren
+# Install dependencies
 pip install -r requirements.txt
 
-# Inference Server starten (benötigt GPU)
+# Start inference server (requires GPU)
 MODEL_NAME=microsoft/Phi-3-mini-4k-instruct python src/inference.py
 
-# In einem anderen Terminal testen
+# In another terminal, test
 curl http://localhost:8000/health
 
-# Chat Completion testen
+# Test chat completion
 curl -X POST http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"default","messages":[{"role":"user","content":"Hi!"}],"max_tokens":50}' \
@@ -452,23 +456,23 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 
 ## 🐛 Troubleshooting
 
-### Pods starten nicht
+### Pods Not Starting
 
 ```bash
-# Pod Status prüfen
+# Check pod status
 kubectl get pods -l app=llm-inference
 
-# Events prüfen
+# Check events
 kubectl describe pod <pod-name>
 
-# Logs prüfen
+# Check logs
 kubectl logs <pod-name>
 ```
 
-### GPU nicht gefunden
+### GPU Not Found
 
 ```bash
-# GPU Nodes prüfen
+# Check GPU nodes
 kubectl get nodes -o json | jq '.items[].status.allocatable | select(."nvidia.com/gpu" != null)'
 
 # NVIDIA Device Plugin
@@ -478,16 +482,28 @@ kubectl get ds -n kube-system nvidia-device-plugin-daemonset
 kubectl get pods -n gpu-operator-resources
 ```
 
-### Model Download fehlschlägt
+### Bfloat16 Error on Tesla T4
 
-Das Modell wird beim Start automatisch von HuggingFace heruntergeladen. Bei Problemen:
+If you see: `ValueError: Bfloat16 is only supported on GPUs with compute capability of at least 8.0`
+
+**Solution:** Set `VLLM_DTYPE=half` in the deployment YAML:
+
+```yaml
+env:
+- name: VLLM_DTYPE
+  value: "half"
+```
+
+### Model Download Fails
+
+The model is automatically downloaded from HuggingFace at startup. For issues:
 
 ```bash
-# HuggingFace Token setzen (für gated models)
+# Set HuggingFace token (for gated models)
 kubectl create secret generic hf-secret \
   --from-literal=HF_TOKEN=your_token
 
-# Und in deployment.yaml hinzufügen:
+# Add to deployment.yaml:
 env:
 - name: HF_TOKEN
   valueFrom:
@@ -498,25 +514,26 @@ env:
 
 ### Out of Memory (OOM)
 
-Für größere Modelle:
-- Erhöhe `memory` Limits in Deployments
-- Reduziere `MAX_MODEL_LEN`
-- Verwende kleineres Modell
-- Nutze Tensor Parallelism (`tensor_parallel_size`)
+For larger models:
+- Increase `memory` limits in deployments
+- Reduce `MAX_MODEL_LEN`
+- Use smaller model
+- Use tensor parallelism (`tensor_parallel_size`)
 
-## 💡 Tipps
+## 💡 Tips
 
-1. **Model wählen**: Phi-3-mini ist perfekt für Tests (schnell, klein, gut)
-2. **Batching**: vLLM batcht automatisch Anfragen für maximalen Durchsatz
-3. **Streaming**: Nutze `stream=true` für bessere UX bei Chat-Anwendungen
-4. **Caching**: emptyDir Volume cacht das Modell (kein erneuter Download)
-5. **Multi-GPU**: Für 70B+ Modelle setze `tensor_parallel_size=2+`
+1. **Model Selection**: Phi-3-mini is perfect for testing (fast, small, good quality)
+2. **Batching**: vLLM automatically batches requests for maximum throughput
+3. **Streaming**: Use `stream=true` for better UX in chat applications
+4. **Caching**: emptyDir volume caches the model (no re-download)
+5. **Multi-GPU**: For 70B+ models, set `tensor_parallel_size=2+`
+6. **Fair Benchmarking**: Use the same dtype (float16) for both deployments
 
-## 📝 Erweitungen
+## 📝 Extensions
 
-### Anderes Modell verwenden
+### Use Different Model
 
-Ändere in `k8s/inference-deployment.yaml`:
+Change in `k8s/inference-deployment.yaml`:
 
 ```yaml
 env:
@@ -526,9 +543,9 @@ env:
   value: "8192"
 ```
 
-### Prometheus-Integration
+### Prometheus Integration
 
-vLLM exportiert Prometheus-Metriken. Füge einen ServiceMonitor hinzu:
+vLLM exports Prometheus metrics. Add a ServiceMonitor:
 
 ```yaml
 apiVersion: monitoring.coreos.com/v1
@@ -567,7 +584,7 @@ spec:
         averageUtilization: 80
 ```
 
-## 🔗 Ressourcen
+## 🔗 Resources
 
 - [vLLM Documentation](https://docs.vllm.ai/)
 - [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
@@ -575,6 +592,6 @@ spec:
 - [Kubernetes GPU Support](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/)
 - [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/getting-started.html)
 
-## 📄 Lizenz
+## 📄 License
 
 MIT License
