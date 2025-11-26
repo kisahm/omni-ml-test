@@ -112,7 +112,7 @@ status:
 
 benchmark-deps:
 	@echo "Checking benchmark dependencies..."
-	@pip3 install -q -r benchmark/requirements.txt
+	@pip3 install -q --break-system-packages -r benchmark/requirements.txt
 	@echo "✓ Benchmark dependencies installed"
 
 benchmark: benchmark-deps
