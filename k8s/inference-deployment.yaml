@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: inference-server
-        image: kisahm/ml-app:latest
+        image: kisahm/ml-app:v0.0.9
         imagePullPolicy: Always
 
         command: ["python", "src/inference.py"]

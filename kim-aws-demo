@@ -1,0 +1,29 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCVENDQWUyZ0F3SUJBZ0lJVUZUTE9BQ2NEaEV3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TlRFeE1qQXhNREEwTkRGYUZ3MHpOVEV4TVRneE1EQTVOREZhTUJVeApFekFSQmdOVkJBTVRDbXQxWW1WeWJtVjBaWE13Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUURJME1TSXZYSnRNZk9FUmhzaW9LTWdUcDZNcWtJenFxQzI1OHZyeEorUWlXTVhmQS9IZmh6Yy9ydVIKVHBLZTlRWkFCUHlFUmx2UWhUenJ6OHhBR3VLWUZKWXk4bDZBM1QzWTdLZE9CUmRlejJMSEd4d0JQcm1CTDBtdQprdCt1Q0YycjZ1dXEySmVQWUVSZ1ZBWVBkeVB5eGg1cDJMOGkzTjFQTTFiMm1xUnZhS3RxYkF0SVdVZStYK1R5CjRueS9XMFB1UnlnTThUNnFPN2czUEJTUU9JWElxUXJpR1NWem5ZbC9ONkVkSHNvNC9aLzM5QVhnVzV3TURCdkoKR2M3cDE1SGpwa1BqSWd4WHBwWGp3MTE0VWdHT1dyWWdUbjEwd2ttRnc1Wk0yckxqV1l5dERoLzBuVURBOGtJNAo4MEo4R1U3VVpvblVBdjBnVjJPeXFaVHhIYWpEQWdNQkFBR2pXVEJYTUE0R0ExVWREd0VCL3dRRUF3SUNwREFQCkJnTlZIUk1CQWY4RUJUQURBUUgvTUIwR0ExVWREZ1FXQkJUQmdYNnhoMjhKWVovd0lzQ1B4Nk9lSXNYSkl6QVYKQmdOVkhSRUVEakFNZ2dwcmRXSmxjbTVsZEdWek1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQUtGaW9ralVCTApyWnBZUFZOWEExUTdCcEpQQnRnN3hZV0VaWnlYb05BOEF6dkJzZnhXeVJPQnZmVCtJS0d3M0VHR1VMc3BLUTN1CkpuOU40OXR4Wm9rU1FqZTBZL0ZudlJyZTJ3dTZPT01QMG4wallvQVBPcEpOVlFaOFhxSERVM2QvaFVvcU90UXYKVzZHRUtzVVllZFlqKzRyUlFZb016SnI0NUt2TnRlN1lqNjVaTzdQaUJpeFBsWVk5QmRzbWIxbDlvWDYxaDQrSgpPSUdnNWg5eUNNR1pwbURWMVJYRE1VOEJlQ1NxRFVtalpKZ3J4UDlpdCtidjhQTVJ0NlkvOUZZTGc2RW9sNzU4CllMamprWFpBT3NpU25VTGhLdm9kYVhkZjJBNjY3Z0laMEpnNnh4WUd1WS9DaXRWQ0k5QWh1WHlsN21FaG1YWkEKNnFvYmxScEUvZVFDCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    server: https://3BDCE3EB2B556F5A0E1A02C6FF79B021.gr7.eu-central-1.eks.amazonaws.com
+  name: arn:aws:eks:eu-central-1:445567108000:cluster/kim-aws-demo
+contexts:
+- context:
+    cluster: arn:aws:eks:eu-central-1:445567108000:cluster/kim-aws-demo
+    user: arn:aws:eks:eu-central-1:445567108000:cluster/kim-aws-demo
+  name: arn:aws:eks:eu-central-1:445567108000:cluster/kim-aws-demo
+current-context: arn:aws:eks:eu-central-1:445567108000:cluster/kim-aws-demo
+kind: Config
+preferences: {}
+users:
+- name: arn:aws:eks:eu-central-1:445567108000:cluster/kim-aws-demo
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      args:
+      - --region
+      - eu-central-1
+      - eks
+      - get-token
+      - --cluster-name
+      - kim-aws-demo
+      - --output
+      - json
+      command: aws
