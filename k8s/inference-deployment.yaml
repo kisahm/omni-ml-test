@@ -63,6 +63,8 @@ spec:
           value: "compute,utility"
         - name: HF_HOME
           value: "/app/.cache/huggingface"
+        - name: VLLM_DTYPE
+          value: "half"  # Use float16 for fair comparison with edge
 
         livenessProbe:
           httpGet:
