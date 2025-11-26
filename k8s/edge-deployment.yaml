@@ -74,6 +74,8 @@ spec:
           value: "/app/.cache/huggingface"
         - name: LOCATION
           value: "edge"
+        - name: VLLM_DTYPE
+          value: "half"  # Use float16 for Tesla T4 (compute capability 7.5)
 
         livenessProbe:
           httpGet:

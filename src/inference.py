@@ -128,6 +128,12 @@ async def load_model(model_name: str = None, max_model_len: int = 4096):
 
     print(f"Loading model: {model_name}")
 
+    # Get dtype from environment (for GPU compatibility)
+    # Use "half" (float16) for older GPUs like Tesla T4 (compute capability 7.5)
+    # Use "auto" for newer GPUs that support bfloat16
+    dtype = os.environ.get('VLLM_DTYPE', 'auto')
+    print(f"Using dtype: {dtype}")
+
     # Configure engine
     engine_args = AsyncEngineArgs(
         model=model_name,
@@ -135,7 +141,7 @@ async def load_model(model_name: str = None, max_model_len: int = 4096):
         gpu_memory_utilization=0.9,
         max_model_len=max_model_len,
         trust_remote_code=True,
-        dtype="auto",
+        dtype=dtype,
     )
 
     # Create engine
