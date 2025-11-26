@@ -1,4 +1,4 @@
-.PHONY: help build push deploy-inference deploy-edge deploy-all clean benchmark status buildx-setup
+.PHONY: help build push deploy-inference deploy-edge deploy-all rollout clean benchmark benchmark-deps status buildx-setup
 
 # Configuration
 IMAGE_NAME ?= ml-app
@@ -17,7 +17,9 @@ help:
 	@echo "  deploy-inference   - Deploy LLM inference service (cluster)"
 	@echo "  deploy-edge        - Deploy LLM inference service (edge)"
 	@echo "  deploy-all         - Deploy both cluster and edge inference"
+	@echo "  rollout            - Restart deployments to pull new image"
 	@echo "  clean              - Clean up Kubernetes resources"
+	@echo "  benchmark-deps     - Install benchmark dependencies"
 	@echo "  benchmark          - Run LLM latency benchmark"
 	@echo "  status             - Show deployment status"
 	@echo "  logs-inference     - Show inference logs (cluster)"
@@ -61,11 +63,19 @@ deploy-inference:
 
 deploy-edge:
 	@echo "Deploying LLM inference service (edge)..."
-	kubectl apply -f k8s/configmap.yaml
 	kubectl apply -f k8s/edge-deployment.yaml
 
 deploy-all: deploy-inference deploy-edge
 	@echo "All LLM inference services deployed!"
+
+rollout:
+	@echo "Restarting deployments to pull new image..."
+	kubectl rollout restart deployment llm-inference-cluster
+	kubectl rollout restart deployment llm-inference-edge -n edge
+	@echo "Waiting for rollout to complete..."
+	kubectl rollout status deployment llm-inference-cluster
+	kubectl rollout status deployment llm-inference-edge -n edge
+	@echo "✓ Rollout complete!"
 
 clean:
 	@echo "Cleaning up Kubernetes resources..."
@@ -79,23 +89,37 @@ logs-inference:
 
 logs-edge:
 	@echo "Fetching LLM inference logs (edge)..."
-	kubectl logs -l app=llm-inference,location=edge -f
+	kubectl logs -n edge -l app=llm-inference,location=edge -f
 
 status:
-	@echo "=== LLM Inference Deployments ==="
+	@echo "=== LLM Inference Deployments (Cluster) ==="
 	kubectl get deployments -l app=llm-inference
 	@echo ""
-	@echo "=== Services ==="
+	@echo "=== LLM Inference Deployments (Edge) ==="
+	kubectl get deployments -n edge -l app=llm-inference
+	@echo ""
+	@echo "=== Services (Cluster) ==="
 	kubectl get services -l app=llm-inference
 	@echo ""
-	@echo "=== Pods ==="
+	@echo "=== Services (Edge) ==="
+	kubectl get services -n edge -l app=llm-inference
+	@echo ""
+	@echo "=== Pods (Cluster) ==="
 	kubectl get pods -l app=llm-inference
+	@echo ""
+	@echo "=== Pods (Edge) ==="
+	kubectl get pods -n edge -l app=llm-inference
 
-benchmark:
+benchmark-deps:
+	@echo "Checking benchmark dependencies..."
+	@pip3 install -q --break-system-packages -r benchmark/requirements.txt
+	@echo "✓ Benchmark dependencies installed"
+
+benchmark: benchmark-deps
 	@echo "Running LLM benchmark..."
 	@echo "Getting service URLs..."
 	$(eval CLUSTER_URL := $(shell kubectl get svc llm-inference-cluster-service -o jsonpath='{.spec.clusterIP}'))
-	$(eval EDGE_URL := $(shell kubectl get svc llm-inference-edge-service -o jsonpath='{.spec.clusterIP}'))
+	$(eval EDGE_URL := $(shell kubectl get svc llm-inference-edge-service -n edge -o jsonpath='{.spec.clusterIP}'))
 	python3 benchmark/llm_benchmark.py \
 		--cluster-url http://$(CLUSTER_URL):8000 \
 		--edge-url http://$(EDGE_URL):8000 \

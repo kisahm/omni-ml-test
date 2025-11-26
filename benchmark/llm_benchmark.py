@@ -381,8 +381,13 @@ class LLMBenchmark:
             print("\n--- EDGE ---")
             self.print_stats(edge_results)
 
-            print("\n--- COMPARISON ---")
-            self.print_comparison(cluster_results, edge_results)
+            # Only compare if both have successful requests
+            if cluster_results.get('successful', 0) > 0 and edge_results.get('successful', 0) > 0:
+                print("\n--- COMPARISON ---")
+                self.print_comparison(cluster_results, edge_results)
+            else:
+                print("\n--- COMPARISON ---")
+                print("  Cannot compare: one or both deployments have no successful requests")
 
         return {
             'cluster': cluster_results,

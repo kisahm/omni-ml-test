@@ -1,0 +1,8 @@
+# Benchmark Dependencies
+# Install with: pip install -r benchmark/requirements.txt
+
+# HTTP client for making requests to the inference service
+requests>=2.31.0
+
+# OpenAI client for interacting with OpenAI-compatible API
+openai>=1.35.0

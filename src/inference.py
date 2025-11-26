@@ -3,7 +3,29 @@ LLM Inference Service with vLLM and FastAPI
 Provides OpenAI-compatible API for LLM inference with performance tracking
 """
 import os
+import sys
 import time
+
+# Workaround for missing pyairports dependency in outlines
+# Mock the module to prevent import errors
+class MockAirportsModule:
+    """Mock for pyairports.airports module"""
+    AIRPORT_LIST = []  # Empty list to make it iterable
+
+    def __getattr__(self, name):
+        return {}
+
+class MockPyairportsModule:
+    """Mock for pyairports module"""
+    airports = MockAirportsModule()
+
+    def __getattr__(self, name):
+        return {}
+
+# Create and install the mocks
+sys.modules['pyairports'] = MockPyairportsModule()
+sys.modules['pyairports.airports'] = MockAirportsModule()
+
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -106,6 +128,12 @@ async def load_model(model_name: str = None, max_model_len: int = 4096):
 
     print(f"Loading model: {model_name}")
 
+    # Get dtype from environment (for GPU compatibility)
+    # Use "half" (float16) for older GPUs like Tesla T4 (compute capability 7.5)
+    # Use "auto" for newer GPUs that support bfloat16
+    dtype = os.environ.get('VLLM_DTYPE', 'auto')
+    print(f"Using dtype: {dtype}")
+
     # Configure engine
     engine_args = AsyncEngineArgs(
         model=model_name,
@@ -113,7 +141,7 @@ async def load_model(model_name: str = None, max_model_len: int = 4096):
         gpu_memory_utilization=0.9,
         max_model_len=max_model_len,
         trust_remote_code=True,
-        dtype="auto",
+        dtype=dtype,
     )
 
     # Create engine
